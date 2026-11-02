@@ -17,7 +17,9 @@ links inside posts, and never downloads attachments.
 | 1 | Dedup: canonical URL, exact fingerprint, near-duplicate similarity (reposts) | working |
 | 1 | SQLite store, Telegram alerts, retry-on-failure, cold-start protection | working |
 | 1 | GitHub Actions every 15 min, DB persisted via Actions cache | ready (needs your repo + secrets) |
-| 1 | Manual import CLI (Facebook / Nextdoor / anything you can't legally scrape) | working (CLI) |
+| 1 | Bluesky public search API | working (strict: needs hiring intent) |
+| 1 | Facebook / Nextdoor via **Telegram inbox**: share a post to your bot, get an assessment back | working |
+| 1 | Manual import CLI | working |
 | 2 | AI analysis (summary, structured JSON, schema validation) | not yet; `analysis_mode` = `rules` |
 | 3 | Streamlit dashboard, more sources | not yet |
 
@@ -30,7 +32,14 @@ links inside posts, and never downloads attachments.
   the official OAuth API (Reddit's Data API terms apply).
 * **Craigslist — disabled.** Craigslist removed RSS in 2024 and answers automated searches with
   HTTP 403. There is no permitted programmatic access, so there is no connector.
-* **Facebook / Nextdoor — manual import only** (`radar import`). No scrapers, no logins.
+* **Bluesky** — public AppView search API (`api.bsky.app`), no account. Mostly chatter and ads,
+  so posts only reach an alert when they show hiring intent.
+* **Facebook / Nextdoor — via your Telegram bot.** There is no permitted automated access to
+  groups or neighbourhood feeds (Facebook's Groups API was shut down in 2024; scraping breaks
+  both sites' terms and gets accounts banned). Instead, when you see a post on your phone, send
+  the bot **one message with the post link and the copied post text**. On the next run (≤ ~15 min)
+  the bot replies with suitability, scam risk and a price estimate. Only your own chat id is
+  processed; the bot never opens the link. Screenshots are not read (no OCR) — paste the text.
 
 ## Quick start (local)
 
@@ -50,11 +59,10 @@ cp .env.example .env          # then fill in the two Telegram values (see below)
 
 ### Telegram setup
 
-1. In Telegram, message **@BotFather** → `/newbot` → copy the token.
-2. Put it in `.env` as `TELEGRAM_BOT_TOKEN=...` (never in code, never in chat logs).
-3. Send `/start` to your new bot, then run `./radar chat-id` and copy your id into
-   `TELEGRAM_CHAT_ID=...`.
-4. `./radar test-notify` — you should receive a test message.
+Run `./radar setup-telegram` and follow the prompts. It asks for the @BotFather token (hidden
+input), checks it, waits for you to tap START in the bot chat on your phone, finds your chat id,
+writes `.env` (mode 600), sends a test message and — if the GitHub CLI is logged in — stores both
+values as Actions secrets. `./radar push-secrets` repeats only that last step.
 
 ### Commands
 
@@ -62,6 +70,9 @@ cp .env.example .env          # then fill in the two Telegram values (see below)
 |---|---|
 | `./radar run [--dry-run]` | Collect → filter → score → store → alert |
 | `./radar test-notify` | Send a test Telegram message |
+| `./radar setup-telegram` | Guided bot setup |
+| `./radar inbox` | Analyze posts you sent to the bot right now |
+| `./radar push-secrets` | Copy Telegram values from `.env` to GitHub secrets |
 | `./radar chat-id` | Show chat ids that messaged your bot |
 | `./radar import --platform facebook --url URL --text "..." [--published 2026-11-02T10:00] [--notify]` | Analyze a post you copied manually |
 | `./radar list [--all]` | Show leads by priority |

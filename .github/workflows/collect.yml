@@ -2,7 +2,9 @@ name: collect
 
 on:
   schedule:
-    - cron: "*/15 * * * *"   # GitHub may delay scheduled runs by several minutes under load
+    # Every 15 min at off-peak minutes: GitHub delays or drops scheduled runs that land on
+    # busy marks like :00/:15/:30/:45.
+    - cron: "4,19,34,49 * * * *"
   workflow_dispatch:
     inputs:
       command:

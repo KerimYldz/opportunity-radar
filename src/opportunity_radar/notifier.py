@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import html
 import logging
+import os
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 import requests
 
@@ -62,6 +64,14 @@ class TelegramNotifier:
         return self._call("getMe", {}).get("result", {})
 
 
+DISPLAY_TZ = ZoneInfo(os.getenv("RADAR_TIMEZONE") or "America/New_York")
+
+
+def local_time(dt: datetime) -> str:
+    """Human-facing timestamps use the owner's time zone (New York by default)."""
+    return dt.astimezone(DISPLAY_TZ).strftime("%b %d, %I:%M %p %Z")
+
+
 def _e(value) -> str:
     return html.escape(str(value), quote=False)
 
@@ -72,7 +82,7 @@ def format_age(published_iso: str | None, verified: bool) -> str:
     published = datetime.fromisoformat(published_iso)
     hours = (datetime.now(timezone.utc) - published).total_seconds() / 3600
     age = f"{int(hours * 60)} min" if hours < 1 else f"{hours:.1f} h" if hours < 48 else f"{hours / 24:.1f} days"
-    return f"{age} ago ({published:%Y-%m-%d %H:%M} UTC{', from source' if verified else ', unverified'})"
+    return f"{age} ago ({local_time(published)}{', from source' if verified else ', unverified'})"
 
 
 def format_lead(row, analysis: dict, header: str = "OPPORTUNITY RADAR — NEW LEAD") -> str:

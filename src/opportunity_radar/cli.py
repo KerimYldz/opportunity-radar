@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from . import config
 from .inbox import process_inbox
 from .models import RawPost
-from .notifier import TelegramError, TelegramNotifier
+from .notifier import TelegramError, TelegramNotifier, local_time
 from .pipeline import Pipeline, RunReport
 from .sources import build_collectors, collect_all
 from .storage import STATUSES, Store
@@ -72,7 +72,7 @@ def cmd_test_notify(args) -> int:
         notifier.send(
             "<b>OPPORTUNITY RADAR — TEST</b>\n"
             "This is a test notification. If you can read it, alerts are configured correctly.\n"
-            f"Sent at {datetime.now(timezone.utc):%Y-%m-%d %H:%M} UTC"
+            f"Sent at {local_time(datetime.now(timezone.utc))}"
         )
     except TelegramError as exc:
         print(f"Failed: {exc}", file=sys.stderr)

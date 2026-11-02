@@ -111,3 +111,11 @@ def test_html_in_post_is_escaped(settings, store):
     post = mock_post(title="[Task] MOCK <b>Excel</b> help <script>", url="https://www.reddit.com/r/slavelabour/comments/mock005/x/")
     Pipeline(settings, store, notifier).run([post])
     assert "<script>" not in notifier.sent[0]
+
+
+def test_times_shown_in_new_york():
+    from datetime import datetime, timezone
+    from opportunity_radar.notifier import local_time
+    # 2026-11-02 is after DST ended, so New York is UTC-5 (EST).
+    assert local_time(datetime(2026, 11, 2, 17, 0, tzinfo=timezone.utc)) == "Nov 02, 12:00 PM EST"
+    assert local_time(datetime(2026, 7, 1, 16, 0, tzinfo=timezone.utc)) == "Jul 01, 12:00 PM EDT"

@@ -20,15 +20,19 @@ concurrency:
 
 permissions:
   contents: read
+  actions: write   # lets a run queue the next one (see the last step)
 
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     env:
       RADAR_DB_PATH: data/radar.db
       PYTHONPATH: src
     steps:
+      - name: Record start time
+        run: echo "RUN_STARTED=$(date +%s)" >> "$GITHUB_ENV"
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
@@ -72,3 +76,25 @@ jobs:
           path: data/radar.db
           retention-days: 2
           overwrite: true
+
+      # GitHub's cron is best-effort: on new repos it can start hours late, and it is
+      # paused after 60 days without repo activity. So each collection run waits until
+      # 15 minutes have passed since it started, then queues the next run itself.
+      # It skips this when another run is already queued, so the cron and this chain
+      # never stack up. To stop everything: Actions → collect → "Disable workflow".
+      - name: Queue next run
+        if: always() && (inputs.command || 'run') == 'run'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          remaining=$(( 900 - ($(date +%s) - RUN_STARTED) ))
+          if [ "$remaining" -gt 0 ]; then sleep "$remaining"; fi
+          others=$(gh run list --workflow collect --limit 20 --json databaseId,status \
+            -q '[.[] | select(.status != "completed" and .databaseId != ${{ github.run_id }})] | length')
+          if [ "$others" = "0" ]; then
+            gh workflow run collect -f command=run
+            echo "queued the next run"
+          else
+            echo "another run is already queued; not chaining"
+          fi

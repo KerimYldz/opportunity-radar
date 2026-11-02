@@ -1,0 +1,72 @@
+name: collect
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # GitHub may delay scheduled runs by several minutes under load
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "radar command to run"
+        type: choice
+        options: [run, test-notify, stats]
+        default: run
+
+# Never run two collectors at once: they would race on the database and could double-notify.
+concurrency:
+  group: radar-collect
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      RADAR_DB_PATH: data/radar.db
+      PYTHONPATH: src
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      # Durable state: the SQLite DB travels between runs through the Actions cache.
+      # Each run restores the newest "radar-db-*" entry and saves a new one.
+      # If the cache is ever evicted, cold-start protection caps alerts (see settings.yaml).
+      - name: Restore lead database
+        uses: actions/cache/restore@v4
+        with:
+          path: data/radar.db
+          key: radar-db-${{ github.run_id }}
+          restore-keys: radar-db-
+
+      - name: Run Opportunity Radar
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python -m opportunity_radar ${{ inputs.command || 'run' }}
+
+      - name: Save lead database
+        if: always() && hashFiles('data/radar.db') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: data/radar.db
+          key: radar-db-${{ github.run_id }}-${{ github.run_attempt }}
+
+      # Opt-in DB download for local inspection. Off by default: artifacts of a PUBLIC repo
+      # can be downloaded by any signed-in GitHub user. Enable with repo variable
+      # UPLOAD_DB_ARTIFACT=true only if the repo is private.
+      - name: Upload database snapshot
+        if: always() && vars.UPLOAD_DB_ARTIFACT == 'true' && hashFiles('data/radar.db') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: radar-db
+          path: data/radar.db
+          retention-days: 2
+          overwrite: true

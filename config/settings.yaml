@@ -1,0 +1,132 @@
+# Opportunity Radar configuration. Secrets never go here — use .env / GitHub secrets.
+
+sources:
+  reddit_rss:
+    enabled: true
+    # Reddit asks for a descriptive, unique User-Agent.
+    user_agent: "python:opportunity-radar:v0.1 (personal non-commercial lead research)"
+    # Anonymous feed access is tightly rate limited; stay well under it.
+    # Observed: roughly one anonymous request per ~10s window. The client also honors
+    # Reddit's X-Ratelimit-Remaining / X-Ratelimit-Reset headers.
+    min_interval_seconds: 12
+    max_requests_per_run: 12
+    feeds:
+      # One combined "multireddit" request instead of one request per subreddit.
+      - name: task-subreddits
+        url: "https://www.reddit.com/r/forhire+slavelabour+DoneDirtCheap/new/.rss?limit=100"
+    searches:
+      # Site-wide natural-language searches (sorted by newest, past week).
+      - query: '"need help" (excel OR spreadsheet OR "google sheets")'
+      - query: '"can someone help" (spreadsheet OR excel OR pdf OR website)'
+      - query: '"looking for someone" (excel OR spreadsheet OR pdf OR website OR "data entry")'
+      - query: '"willing to pay" (excel OR spreadsheet OR pdf OR website OR script)'
+      # Local communities (South Jersey / Philadelphia).
+      - subreddits: [philadelphia, southjersey, newjersey, Pennsylvania]
+        query: '(help OR "looking for" OR "need someone") (computer OR excel OR spreadsheet OR website OR pdf)'
+
+  bluesky:
+    # Public AppView search API, no account needed. Mostly conversation, so only posts
+    # that show hiring intent ("willing to pay", "need someone to") can reach an alert.
+    enabled: true
+    user_agent: "opportunity-radar/0.1 (personal non-commercial lead research)"
+    min_interval_seconds: 1
+    since_days: 3
+    # Broad terms on purpose: exact phrases return almost nothing on Bluesky.
+    # The Stage 1 rules do the narrowing.
+    queries:
+      - excel help
+      - spreadsheet help
+      - need someone spreadsheet
+      - pay someone excel
+      - google sheets help
+      - pdf to excel
+      - need someone website
+      - website help small business
+      - data entry help
+      - computer help philadelphia
+
+  facebook_nextdoor:
+    # There is no permitted automated access to groups/neighborhood feeds (Facebook's
+    # Groups API was shut down in 2024; scraping breaks both sites' terms).
+    # Share posts to your Telegram bot instead; see "telegram_inbox" below.
+    enabled: false
+
+  craigslist:
+    # Craigslist removed its RSS feeds in 2024 and blocks automated search access (HTTP 403).
+    # It is intentionally disabled; there is no permitted programmatic access to wire up.
+    enabled: false
+
+filters:
+  max_post_age_days: 7            # older posts are stored but never treated as new
+  min_body_chars: 15
+  allowed_local_areas:
+    - philadelphia
+    - philly
+    - south jersey
+    - southjersey
+    - new jersey
+    - " nj"
+    - camden
+    - cherry hill
+    - voorhees
+    - marlton
+    - mount laurel
+    - haddonfield
+    - glassboro
+    - deptford
+    - pennsauken
+    - bucks county
+    - delaware county
+    - montgomery county
+  # Communities whose posts are paid task requests by convention.
+  # Elsewhere a post must show hiring intent ("willing to pay", "know someone who can…").
+  task_subreddits:
+    - forhire
+    - slavelabour
+    - DoneDirtCheap
+    - ForHireFreelance
+    - hiring
+  # Communities whose requests are mostly bypass/cracking related; always rejected.
+  blocked_subreddits:
+    - ActivationLockBypass
+    - Piracy
+    - BookPiracy
+    - CrackSupport
+  # Subreddits where people expect free advice; still collected, but penalized.
+  free_help_subreddits:
+    - excel
+    - googlesheets
+    - techsupport
+    - learnpython
+    - learnprogramming
+    - wordpress
+    - webdev
+    - sql
+    - pdf
+
+telegram_inbox:
+  # Posts you send to your bot (e.g. shared from Facebook / Nextdoor) are analyzed on each
+  # run and the bot replies with the assessment. Only messages from TELEGRAM_CHAT_ID count.
+  enabled: true
+
+notifications:
+  min_suitability: 75
+  max_scam_risk: 40
+  max_age_hours: 48
+  allow_unknown_date: false       # unknown-date leads are stored and ranked lower
+  include_high_risk: false        # set true to also alert on high scam-risk leads
+  max_per_run: 10
+  # On a brand-new database (first run, or lost CI cache) only alert on the top N,
+  # so a lost cache can never flood you with old leads.
+  cold_start_max: 3
+
+priority_weights:
+  suitability: 0.30
+  recency: 0.25
+  economic: 0.20
+  scam_safety: 0.15
+  remote: 0.10
+
+dedup:
+  similarity_threshold: 0.85
+  lookback_days: 30

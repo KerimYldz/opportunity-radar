@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Local runner: uses the project venv and source tree directly (no install needed).
+DIR="$(cd "$(dirname "$0")" && pwd)"
+PY="$DIR/.venv/bin/python"
+[ -x "$PY" ] || PY=python3
+PYTHONPATH="$DIR/src${PYTHONPATH:+:$PYTHONPATH}" exec "$PY" -m opportunity_radar "$@"

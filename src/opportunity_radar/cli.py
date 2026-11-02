@@ -10,6 +10,7 @@ import sys
 from datetime import datetime, timezone
 
 from . import config
+from .digest import maybe_send_digest
 from .inbox import process_inbox
 from .models import RawPost
 from .notifier import TelegramError, TelegramNotifier, local_time
@@ -59,6 +60,11 @@ def cmd_run(args) -> int:
             log.info("telegram inbox: %d received, %d analyzed, %d ignored", inbox.received, inbox.analyzed, inbox.ignored)
         except TelegramError as exc:
             report.errors.append(f"telegram inbox: {exc}")
+        try:
+            if maybe_send_digest(settings, store, notifier):
+                log.info("daily digest sent")
+        except TelegramError as exc:
+            report.errors.append(f"daily digest: {exc}")
     store.log_run(started, report.fetched, report.new, report.notified, report.errors)
     store.close()
     _print_report(report)

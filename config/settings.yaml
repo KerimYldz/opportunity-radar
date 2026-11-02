@@ -120,6 +120,15 @@ notifications:
   # so a lost cache can never flood you with old leads.
   cold_start_max: 3
 
+digest:
+  # Once a day (first run after this hour, New York time) send a short summary of the best
+  # near-miss leads, so quiet days still show the radar is working.
+  enabled: true
+  hour: 18
+  min_suitability: 55
+  max_scam_risk: 40
+  max_items: 5
+
 priority_weights:
   suitability: 0.30
   recency: 0.25

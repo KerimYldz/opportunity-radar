@@ -69,7 +69,8 @@ COMPLEXITY_HIGH = _rx(r"\bfull[\s-]?stack\b", r"\bmobile\s+app\b", r"\b(ios|andr
 COMPLEXITY_LOW = _rx(r"\bsimple\b", r"\bquick\b", r"\bsmall\s+(task|job|project)\b", r"\bbasic\b", r"\bone[\s-]time\b", r"\bshould\s+be\s+easy\b")
 REMOTE = _rx(r"\bremote(ly)?\b", r"\bonline\b", r"\bvirtual(ly)?\b", r"\bfrom\s+anywhere\b", r"\bover\s+(zoom|teams|screen\s?share)\b")
 LOCAL = _rx(r"\bin[\s-]person\b", r"\bon[\s-]?site\b", r"\bcome\s+(to|over)\b", r"\bmy\s+(house|home|office|shop|store)\b", r"\blocal\s+(only|person|help)\b", r"\bnear\s+me\b")
-BUDGET = re.compile(r"(?:budget|pay(?:ing)?|offer(?:ing)?|rate|compensation)?[^\n$]{0,25}\$\s?\d[\d,]*(?:\.\d{2})?(?:\s?(?:-|to)\s?\$?\s?\d[\d,]*)?(?:\s?(?:/|per)\s?(?:hr|hour|task|job|day))?", re.IGNORECASE)
+# Just the amount as written ("$50", "$40-60", "$15/hr+"), never surrounding sentence text.
+BUDGET = re.compile(r"\$\s?\d[\d,]*(?:\.\d{2})?(?:\s?(?:-|–|to)\s?\$?\s?\d[\d,]*)?\+?(?:\s?(?:/|per|an?)\s?(?:hr|hour|task|job|day|week|month)\b)?\+?", re.IGNORECASE)
 
 
 def detect_intent(post: RawPost) -> str:

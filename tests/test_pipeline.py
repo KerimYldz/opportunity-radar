@@ -101,8 +101,9 @@ def test_notification_contains_required_fields(settings, store):
     notifier = FakeNotifier()
     Pipeline(settings, store, notifier).run([mock_post()])
     msg = notifier.sent[0]
-    for needle in ["OPPORTUNITY RADAR — NEW LEAD", "Source:", "Post age:", "Advertised budget:", "Suggested price:",
-                   "Est. time:", "Suitability:", "Scam risk:", "Remote/local:", "comments/mock001"]:
+    for needle in ["YENİ İŞ", "MOCK need help cleaning up my Excel", "MOCK: I have an Excel spreadsheet",
+                   "Reddit · r/slavelabour", "saat önce", "Bütçe: $50", "Önerilen fiyat:", "Tahmini süre:",
+                   "Uygunluk:", "Dolandırıcılık riski:", "uzaktan yapılabilir", "comments/mock001"]:
         assert needle in msg
 
 

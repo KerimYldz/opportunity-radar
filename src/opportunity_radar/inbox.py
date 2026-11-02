@@ -29,17 +29,17 @@ PLATFORMS = {
 OFFSET_KEY = "telegram_update_offset"
 
 HELP = (
-    "<b>Opportunity Radar inbox</b>\n"
-    "Send me a post you found (Facebook, Nextdoor, anywhere) in ONE message:\n"
-    "1. the post link\n2. the post text (copy it from the app)\n\n"
-    "I check my inbox on every scheduled run (about every 15 minutes) and reply with the "
-    "suitability score, scam risk and a suggested price. I never contact the poster."
+    "<b>Opportunity Radar</b>\n"
+    "Facebook, Nextdoor ya da başka bir yerde gördüğün bir ilanı bana TEK mesajda gönder:\n"
+    "1. ilanın linki\n2. ilanın metni (uygulamadan kopyala)\n\n"
+    "Yaklaşık 15 dakika içinde uygunluk puanı, dolandırıcılık riski ve önerilen fiyatla cevap veririm. "
+    "İlan sahibiyle asla kendim iletişime geçmem."
 )
 NEED_TEXT = (
-    "Got the link, but I also need the post text — I don't open Facebook/Nextdoor links myself. "
-    "Copy the post text and send the link and the text together in one message."
+    "Linki aldım ama ilanın metni de lazım. Facebook/Nextdoor linklerini kendim açmıyorum. "
+    "İlanın yazısını kopyalayıp linkle birlikte tek mesajda gönder."
 )
-NEED_LINK = "Please include the link to the original post together with its text, so the lead keeps its source."
+NEED_LINK = "Lütfen ilanın linkini de metinle birlikte gönder, böylece kaynağı kaybolmaz."
 
 
 def platform_for(url: str) -> str:
@@ -104,7 +104,7 @@ def process_inbox(notifier: TelegramNotifier, pipeline: Pipeline, owner_chat_id:
                 )
                 pipeline.ingest([post], RunReport(fetched=1))
             row = store.get(lid)
-            header = "ALREADY ANALYZED — ASSESSMENT" if known else "MANUAL LEAD — ASSESSMENT"
+            header = "📌 BU İLANA DAHA ÖNCE BAKMIŞTIM" if known else "📌 GÖNDERDİĞİN İLAN"
             notifier.send(format_lead(row, json.loads(row["analysis_json"]), header=header), reply_to=reply_to)
             store.set_notify_state(lid, "sent")
             report.analyzed += 1

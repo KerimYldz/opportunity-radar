@@ -121,3 +121,10 @@ def test_lookup_and_macro_words_need_spreadsheet_context(settings):
 def test_activation_lock_bypass_rejected(settings):
     p = mock_post(title="[Task] MOCK remove activation lock from iPhone", body="MOCK: Need someone to bypass the activation lock on an iPhone, will pay $50.", sub="r/ActivationLockBypass")
     assert filters.analyze(p, settings, age_hours=1).reject_reason in {"blocked_community", "suspicious_request"}
+
+
+def test_budget_is_only_the_amount(settings):
+    for body, expected in [("MOCK: fix my sheet. Will pay $50. Remote.", "$50"),
+                           ("MOCK: budget is $40-60 for this", "$40-60"),
+                           ("MOCK: paying $15/hr+ for excel help", "$15/hr+")]:
+        assert filters.extract_budget(body) == expected

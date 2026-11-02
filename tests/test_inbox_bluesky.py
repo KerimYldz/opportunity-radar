@@ -49,7 +49,7 @@ def test_inbox_analyzes_owner_post_and_replies(settings, store):
     report = process_inbox(bot, Pipeline(settings, store, bot), OWNER)
     assert report.analyzed == 1
     text, reply_to = bot.sent[0]
-    assert "MANUAL LEAD — ASSESSMENT" in text and reply_to == 10
+    assert "GÖNDERDİĞİN İLAN" in text and "Facebook (senin gönderdiğin)" in text and reply_to == 10
     row = store.conn.execute("SELECT * FROM leads").fetchone()
     assert row["source"] == "facebook (manual)"
     assert json.loads(row["analysis_json"])["suitability"] >= 75
